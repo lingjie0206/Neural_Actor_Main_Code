@@ -1,0 +1,6 @@
+[submodule "imaginaire"]
+	path = imaginaire
+	url = git@github.com:MultiPath/imaginaire-stable.git
+[submodule "imaginaire-stable"]
+	path = imaginaire-stable
+	url = https://github.com/MultiPath/imaginaire-stable
