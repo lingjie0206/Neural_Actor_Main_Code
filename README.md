@@ -37,16 +37,28 @@ Only learning and rendering on GPUs are supported.
 
 ## Installation
 
-To install, first clone this repo and install all dependencies:
+To install, first clone this repo and install all dependencies. We suggest installing in a virtual environment.
 
 ```bash
+conda create -n neuralactor python=3.8
+conda activate neuralactor
+
 pip install -r requirements.txt
+```
+This code also depends on ``opendr``, which can be installed from source
+```
+mkdir -p tools
+git clone https://github.com/MultiPath/opendr.git tools/opendr
+
+pushd tools/opendr
+python setup.py install
+popd
 ```
 
 Then,  run
 
 ```bash
-pip install --editable ./
+pip install --editable .
 ```
 
 Or if you want to install the code locally, run:
@@ -55,10 +67,22 @@ Or if you want to install the code locally, run:
 python setup.py build_ext --inplace
 ```
 
-To train and generate texture maps, it is also needed to compile ```imaginaire``` following the [instruction](https://github.com/NVlabs/imaginaire/blob/master/INSTALL.md).
+To train and generate texture maps, it also needs to compile ```imaginaire``` following the [instruction](https://github.com/NVlabs/imaginaire/blob/master/INSTALL.md).
 You can also run:
+```bash
+# please make sure CUDA_HOME is set correctly before compiling.
+export CUDA_HOME=/usr/local/cuda-10.2/   # or the path you installed CUDA
+git submodule update --init
+
+pushd imaginaire
+bash scripts/install.sh
+popd
 ```
-cd imaginaire; bash scripts/install.sh; cd ..
+
+Generation with ``imageinaire`` also requires a pretrained checkpoint of ``flownet2``. We suggest manually download before running.
+```
+mkdir -p imaginaire/checkpoints
+gdown 1hF8vS6YeHkx3j2pfCeQqqZGwA_PJq_Da -O imaginaire/checkpoints/flownet2.pth.tar
 ```
 
 ## Dataset
@@ -66,12 +90,51 @@ Please find the character mapping in our paper:
 
 ![image](docs/figs/dataset-1.png)
 
-For the full dataset, please refer to this link with agreement. [TODO]
+For full datasets, please register through this [link](https://gvv-assets.mpi-inf.mpg.de/NeuralActor/?page_id=11#038;redirect_to=https%3A%2F%2Fgvv-assets.mpi-inf.mpg.de%2FNeuralActor%2F) by accepting agreements.
 
-### Prepare your own dataset
+Each dataset also needs additional files which defines the canonical geometry, the UV parameterization and skinning weights. Please download from [Google drive folder](https://drive.google.com/drive/folders/1cXk623v7p1eo9566tuxE8hXWIF9ov8hR?usp=sharing)
 
-TODO
+We also provide the SMPL tracking results (pose and shape parameters) of each sequence. Please download from [Google drive folder](https://drive.google.com/drive/folders/1C5W4l3r2Rkewz84roqzEepQimBtPeHBY?usp=sharing)
+
+Note that D1 and D2 are orginally from the paper [Real-time Deep Dynamic Characters](https://people.mpi-inf.mpg.de/~mhaberma/projects/2021-ddc/), and S1 and S2 are orginally from the paper [DeepCap: Monocular Human Performance Capture Using Weak Supervision](https://people.mpi-inf.mpg.de/~mhaberma/projects/2020-cvpr-deepcap/). We process these four datasets in our Neural Actor format. Therefore, please consider citing the following references if you use the datasets:
+
+```bibtex
+@article{liu2021neural,
+      title={Neural Actor: Neural Free-view Synthesis of Human Actors with Pose Control}, 
+      author={Lingjie Liu and Marc Habermann and Viktor Rudnev and Kripasindhu Sarkar and Jiatao Gu and Christian Theobalt},
+      year={2021},
+      journal = {ACM Trans. Graph.(ACM SIGGRAPH Asia)}
+}
+
+@article{
+	habermann2021,
+	author = {Marc Habermann and Lingjie Liu and Weipeng Xu and Michael Zollhoefer and Gerard Pons-Moll and Christian Theobalt},
+	title = {Real-time Deep Dynamic Characters},
+	journal = {ACM Transactions on Graphics}, 
+	month = {aug},
+	volume = {40},
+	number = {4}, 
+	articleno = {94},
+	year = {2021}, 
+	publisher = {ACM}
+} 
+
+@inproceedings{deepcap,
+    title = {DeepCap: Monocular Human Performance Capture Using Weak Supervision},
+    author = {Habermann, Marc and Xu, Weipeng and Zollhoefer, Michael and Pons-Moll, Gerard and Theobalt, Christian},
+    booktitle = {{IEEE} Conference on Computer Vision and Pattern Recognition (CVPR)},
+    month = {jun},
+    organization = {{IEEE}},
+    year = {2020},
+}
+```
+
+## Prepare your own dataset
+
+Please refer to a [saperate repo](https://github.com/lingjie0206/Neural_Actor_Preprocessing) for detailed steps for pre-processing your own datasets
 <!-- To prepare a new dataset of a single scene for training and testing, please follow the data structure: -->
+
+
 
 ## Pre-trained Models
 
@@ -90,8 +153,7 @@ We provide an [example](/docs/rendering_pipeline.md) of free-view video synthesi
 
 ## Train a new model
 
-TODO
-
+We provide an [example](/docs/training.md) for training the texture prediction and free-view neural rendering.
 
 <!-- ## Train a new model
 
@@ -248,3 +310,4 @@ Please cite as
       journal = {ACM Trans. Graph.(ACM SIGGRAPH Asia)}
 }
 ```
+

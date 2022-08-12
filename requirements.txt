@@ -1,8 +1,9 @@
 numpy
+gdown
+Pillow
+opencv-python
 h5py==3.7.0
 open3d==0.10.0.0
-opendr==0.78
-opencv_python==4.2.0.32
 tqdm==4.43.0
 pandas==0.25.3
 imageio==2.6.1

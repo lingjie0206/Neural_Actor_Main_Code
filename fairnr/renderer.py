@@ -62,7 +62,7 @@ class NeuralRenderer(object):
         if self.path_gen is None:
             self.path_gen = trajectory.circle()
         if self.output_type is None:
-            self.output_type = ["rgb"]
+            self.output_type = ["color"]
 
         if test_camera_intrinsics is not None:
             self.test_int = data_utils.load_intrinsics(test_camera_intrinsics)
@@ -136,7 +136,7 @@ class NeuralRenderer(object):
         output_path = self.output_dir
         image_names = []
         sample, step, frames = self.parse_sample(sample)
-
+        
         # fix the rendering size
         if 'size' in sample:
             a = sample['size'][0,0,0] / self.resolution[0]
@@ -147,21 +147,23 @@ class NeuralRenderer(object):
             sample['size'][:, :, 3] *= b
         else:
             sample['size'] = torch.tensor([[[self.resolution[0], self.resolution[1], 1, 1]]]).type_as(sample['intrinsics'])
-            
+        
+        # HACK??
+        # sample['intrinsics'][:, 0,0] *= 3.2 # sample['intrinsics'][:, 0,0] * self.resolution[1] / 2 / sample['intrinsics'][:, 0,2]
+        # sample['intrinsics'][:, 1,1] *= 3.2 # sample['intrinsics'][:, 1,1] * self.resolution[0] / 2 / sample['intrinsics'][:, 1,2]
+        # sample['intrinsics'][:, 0,2] *= 3.2 # self.resolution[1] / 2
+        # sample['intrinsics'][:, 1,2] *= 3.2 # self.resolution[0] / 2
+
         for shape in range(sample['shape'].size(0)):
             max_step = step + frames
             while step < max_step:
                 next_step = min(step + self.beam, max_step)
-                # if step < 7000:
-                #     step = next_step
-                #     break
-
                 uv, inv_RT = zip(*[
                     self.generate_rays(
                         k, 
                         sample['intrinsics'][shape], 
                         sample['size'][shape, 0],
-                        self.test_poses[k] if self.test_poses is not None else None, None)
+                        self.test_poses[0] if self.test_poses is not None else None, None)
                         # sample['joints'][shape].mean(0) if 'joints' in sample else None)
                     for k in range(step, next_step)
                 ])
@@ -193,51 +195,59 @@ class NeuralRenderer(object):
                 for key in ['vertex', 'joints', 'joints_RT', 'translation', 'rotation', 'pose', 'tex']:
                     if key in sample:
                         _sample[key] = sample[key][shape:shape+1]
+
                 
-                with data_utils.GPUTimer() as timer:
-                    outs = model(**_sample)
+                if 'marchingcube' in self.output_type:
+                    os.makedirs(os.path.join(output_path, 'mc_mesh'), exist_ok=True)
+                    with open(os.path.join(output_path, 'mc_mesh', f'{step:06d}.ply'), 'wb') as fd:
+                        with data_utils.GPUTimer() as timer:
+                            plydata = model.export_surfaces(**_sample)
+                        plydata.text = True
+                        plydata.write(fd)
+
+                else:
+                    with data_utils.GPUTimer() as timer:
+                        outs = model(**_sample)
+                    print(f'render time {timer.sum}s')
                     
-                # logger.info("rendering frame = {}\ttotal time = {:.4f}".format(step, timer.sum))
+                    for k in range(step, next_step):
+                        images = model.visualize(_sample, None, 0, k-step)
+                        image_name = "{:06d}".format(k)
+                        # from fairseq import pdb;pdb.set_trace()
+                        for key in images:
+                            name, type = key.split('/')[0].split('_')
+                            if type in self.output_type:
+                                if name == 'coarse':
+                                    type = 'coarse-' + type
+                                if name == 'target':
+                                    continue
+                                
+                                prefix = os.path.join(output_path, type)
+                                Path(prefix).mkdir(parents=True, exist_ok=True)
+                                if type == 'point':
+                                    data_utils.save_point_cloud(
+                                        os.path.join(prefix, image_name + '.ply'),
+                                        images[key][:, :3].cpu().numpy(), 
+                                        (images[key][:, 3:] * 255).cpu().int().numpy())
+                                    # from fairseq import pdb; pdb.set_trace()
 
-                for k in range(step, next_step):
-                    images = model.visualize(_sample, None, 0, k-step)
-                    image_name = "{:06d}".format(k)
-                    # from fairseq import pdb;pdb.set_trace()
-                    for key in images:
-                        name, type = key.split('/')[0].split('_')
-                        if type in self.output_type:
-                            if name == 'coarse':
-                                type = 'coarse-' + type
-                            if name == 'target':
-                                continue
-                            
-                            prefix = os.path.join(output_path, type)
-                            Path(prefix).mkdir(parents=True, exist_ok=True)
-                            if type == 'point':
-                                data_utils.save_point_cloud(
-                                    os.path.join(prefix, image_name + '.ply'),
-                                    images[key][:, :3].cpu().numpy(), 
-                                    (images[key][:, 3:] * 255).cpu().int().numpy())
-                                # from fairseq import pdb; pdb.set_trace()
+                                else:
+                                    image = images[key].permute(2, 0, 1) \
+                                        if images[key].dim() == 3 else torch.stack(3*[images[key]], 0)        
+                                    save_image(image, os.path.join(prefix, image_name + '.png'), format=None)
+                                    image_names.append(os.path.join(prefix, image_name + '.png'))
+                        
+                        # save pose matrix
+                        prefix = os.path.join(output_path, 'pose')
+                        Path(prefix).mkdir(parents=True, exist_ok=True)
+                        pose = self.test_poses[0] if self.test_poses is not None else inv_RT[k-step].cpu().numpy()
+                        np.savetxt(os.path.join(prefix, image_name + '.txt'), pose)    
 
-                            else:
-                                image = images[key].permute(2, 0, 1) \
-                                    if images[key].dim() == 3 else torch.stack(3*[images[key]], 0)        
-                                save_image(image, os.path.join(prefix, image_name + '.png'), format=None)
-                                image_names.append(os.path.join(prefix, image_name + '.png'))
-                    
-                    # save pose matrix
-                    prefix = os.path.join(output_path, 'pose')
-                    Path(prefix).mkdir(parents=True, exist_ok=True)
-                    pose = self.test_poses[k] if self.test_poses is not None else inv_RT[k-step].cpu().numpy()
-                    np.savetxt(os.path.join(prefix, image_name + '.txt'), pose)    
-
-                    # prefix = os.path.join(output_path, 'intrinsics')
-                    # Path(prefix).mkdir(parents=True, exist_ok=True)
-                    # intrinsics = sample['intrinsics'][k-step].cpu().numpy()
-                    # np.savetxt(os.path.join(prefix, image_name + '.txt'), intrinsics)    
-                   
-
+                        # prefix = os.path.join(output_path, 'intrinsics')
+                        # Path(prefix).mkdir(parents=True, exist_ok=True)
+                        # intrinsics = sample['intrinsics'][k-step].cpu().numpy()
+                        # np.savetxt(os.path.join(prefix, image_name + '.txt'), intrinsics)    
+                
                 step = next_step
 
         step -= 1  # BUG?

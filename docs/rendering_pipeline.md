@@ -77,6 +77,15 @@ python -m torch.distributed.launch --nproc_per_node=8 inference.py \
     --checkpoint ${texture_model} \
     --testdir ${data_path} \
     --output_dir ${data_path}/tex
+
+# or we can use single-gpu to inference
+# python inference.py \
+#     --single_gpu \
+#     --config vid2vid_inference.yaml \
+#     --checkpoint ${texture_model} \
+#     --testdir ${data_path} \
+#     --output_dir ${data_path}/tex
+
 popd
 
 # remove unused files
@@ -91,8 +100,8 @@ https://user-images.githubusercontent.com/5780274/172693409-cd97cead-550c-488a-9
 
 
 
-**Note that**: generation may fail when ``imageinaire`` failed download ``flownet2`` checkpoint. <br>
-To fix this, please download [flownet](https://docs.google.com/uc?export=download&id=1hF8vS6YeHkx3j2pfCeQqqZGwA_PJq_Da) manually and save it under ``imaginaire/checkpoints/``.
+<!-- **Note that**: generation may fail when ``imageinaire`` failed download ``flownet2`` checkpoint. <br>
+To fix this, please download [flownet](https://docs.google.com/uc?export=download&id=1hF8vS6YeHkx3j2pfCeQqqZGwA_PJq_Da) manually and save it under ``imaginaire/checkpoints/``. -->
 
 
 ### STEP 3: generate video given camera poses
@@ -141,7 +150,7 @@ https://user-images.githubusercontent.com/5780274/172692937-18f5a21c-7ace-404e-8
 
 ## Evaluation for self-reenactment given novel poses
 
-Our code also support quantitative evaluation by rendering the character under an unseen poses, and compare the output with the ground-truth video. To do this, [download](https://dl.fbaipublicfiles.com/nsvf/neural_actor/example/sample_with_rgb.zip) and unzip the to ``${PWD}/workplace/sample_eval``. Similarly, it contains dataset in the following format:
+Our code also supports quantitative evaluation by rendering the character under an unseen poses, and compare the output with the ground-truth video. To do this, [download](https://dl.fbaipublicfiles.com/nsvf/neural_actor/example/sample_with_rgb.zip) and unzip the to ``${PWD}/workplace/sample_eval``. Similarly, it contains dataset in the following format:
 ```bash
 <dataset name>
 |-- canonical.obj         # a SMPL mesh of standard canonical pose

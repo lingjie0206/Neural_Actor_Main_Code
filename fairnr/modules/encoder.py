@@ -141,7 +141,7 @@ class VolumeEncoder(Encoder):
         return eikonal_points
         
     @torch.no_grad()
-    def export_surfaces(self, field_fn, th, bits):
+    def export_surfaces(self, field_fn, th, encoder_states=None, **unused):
         # Token from IDR code.
         from skimage import measure
 
@@ -1546,7 +1546,6 @@ class JointVolumeEncoder(VolumeEncoder):
 
             # query from the nearest vertex/face for features/weights
             vertices = encoder_states['vertices'].contiguous()   # mesh in normalized space
-           
             from fairnr.clib._ext import point_face_dist_forward
             triangles = F.embedding(self.faces, vertices)
             l_idx = torch.tensor([0,]).type_as(self.faces)
@@ -1645,6 +1644,52 @@ class JointVolumeEncoder(VolumeEncoder):
 
     def postcompute(self, inputs, encoder_states):
         pass
+
+    @torch.no_grad()
+    def export_surfaces(self, field_fn, th, encoder_states=None, **unused):
+        # Token from IDR code.
+        from skimage import measure
+        
+        # get SMPL meshes
+        def get_grid_uniform(resolution, vertices):
+            min_bound = (vertices.min(dim=0)[0] - 0.2).cpu().numpy()
+            max_bound = (vertices.max(dim=0)[0] + 0.2).cpu().numpy()
+            xx = np.linspace(min_bound[0], max_bound[0], resolution)
+            yy = np.linspace(min_bound[1], max_bound[1], resolution)
+            zz = np.linspace(min_bound[2], max_bound[2], resolution)
+            xxx, yyy, zzz = np.meshgrid(xx, yy, zz)
+            grid_points = torch.tensor(np.vstack([xxx.ravel(), yyy.ravel(), zzz.ravel()]).T, dtype=torch.float)
+            return {"grid_points": grid_points.cuda(), "xyz": [xx, yy, zz]}
+
+        vertices_normalized = encoder_states["vertices"][0]   # normalized space
+        vertices = torch.matmul(vertices_normalized, encoder_states["R"][0]) + encoder_states["T"][0]  # N x 3, mesh in posed/global space
+        grid     = get_grid_uniform(128, vertices)
+        points   = grid['grid_points'] 
+        encoder_states = {
+                name: s.reshape(-1, s.size(-1)) 
+                    if isinstance(s, torch.Tensor) else s
+                for name, s in encoder_states.items()
+        }   
+           
+        z = []
+        for pnts in torch.split(points, 200000, dim=0):
+            samples = {'sampled_point_xyz': pnts}
+            inputs = self.forward(samples, encoder_states)
+            z.append(field_fn(inputs, outputs=['sigma'])['sigma'].detach().cpu().numpy())
+        z = np.concatenate(z, axis=0)
+        
+        if (not (np.min(z) > 0 or np.max(z) < 0)):
+            z = z.astype(np.float32)
+            verts, faces, normals, values = measure.marching_cubes_lewiner(
+                level=50,
+                volume=z.reshape(grid['xyz'][1].shape[0], grid['xyz'][0].shape[0], grid['xyz'][2].shape[0]).transpose([1, 0, 2]),
+                spacing=(grid['xyz'][0][2] - grid['xyz'][0][1], grid['xyz'][1][2] - grid['xyz'][1][1], grid['xyz'][2][2] - grid['xyz'][2][1])
+            )
+            verts = verts + np.array([grid['xyz'][0][0], grid['xyz'][1][0], grid['xyz'][2][0]])
+            verts = np.array([tuple(a) for a in verts.tolist()], dtype=[('x', 'f4'), ('y', 'f4'), ('z', 'f4')])
+            faces = np.array([(a, ) for a in faces.tolist()], dtype=[('vertex_indices', 'i4', (3,))])
+            return PlyData([PlyElement.describe(verts, 'vertex'), PlyElement.describe(faces, 'face')])
+        raise NotImplementedError
 
 def bbox2voxels(bbox, voxel_size):
     vox_min, vox_max = bbox[:3], bbox[3:]

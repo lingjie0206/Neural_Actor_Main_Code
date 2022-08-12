@@ -1,0 +1,195 @@
+# How often do you want to save output images during training.
+image_save_iter: 500
+# How often do you want to save trained models.
+snapshot_save_epoch: 1
+# How often do you want to log the training stats.
+logging_iter: 100
+# Number of training epochs.
+max_epoch: 80
+# Number of epochs training single frame generator.
+single_frame_epoch: 0
+# How often to double the number of training frames in each clip.
+num_epochs_temporal_step: 1
+
+# Trainer options.
+trainer:
+    type: imaginaire.trainers.vid2vid
+    amp: O1
+    model_average: True
+    model_average_beta: 0.999
+    model_average_start_iteration: 500
+    model_average_batch_norm_estimation_iteration: 0    
+    num_videos_to_test: 1
+    num_frames_per_video: 2847 
+
+    gan_mode: hinge
+    gan_relativistic: False
+    perceptual_loss:
+        mode: 'vgg19'
+        layers: ['relu_1_1', 'relu_2_1', 'relu_3_1', 'relu_4_1', 'relu_5_1']
+        weights: [0.03125, 0.0625, 0.125, 0.25, 1.0]
+    loss_weight:
+        gan: 1.0
+        feature_matching: 10.0        
+        temporal_gan: 1.0
+        perceptual: 10.0
+        flow: 10.0
+    init:
+        type: xavier
+        gain: 0.02
+
+# Optimization option.
+gen_opt:
+    type: adam
+    lr: 0.0001
+    adam_beta1: 0.
+    adam_beta2: 0.999
+    lr_policy:
+        iteration_mode: False
+        type: step
+        step_size: 100
+        gamma: 0.5
+dis_opt:
+    type: adam
+    fused_opt: True
+    lr: 0.0004
+    adam_beta1: 0.
+    adam_beta2: 0.999
+    lr_policy:
+        iteration_mode: False
+        type: step
+        step_size: 100
+        gamma: 0.5
+
+
+# Model options.
+gen:  
+    type: imaginaire.generators.vid2vid
+    num_filters: 32
+    max_num_filters: 1024
+    num_downsamples: 5
+    activation_norm_type: spatially_adaptive
+    activation_norm_params:
+        activation_norm_type: instance
+        num_filters: 0
+        kernel_size: 1
+    weight_norm_type: spectral
+    do_checkpoint: True
+    flow:
+        generate_raw_output: False
+        num_filters: 32
+        max_num_filters: 1024
+        num_downsamples: 3
+        num_res_blocks: 6
+        activation_norm_type: instance
+        weight_norm_type: spectral
+        flow_output_multiplier: 20
+        multi_spade_combine:
+            num_layers: 3
+            embed:
+                arch: unet
+                num_filters: 32
+                num_downsamples: 5
+                kernel_size: 3
+                weight_norm_type: spectral
+    embed:
+        use_embed: True
+        arch: encoderdecoder
+        num_filters: 32
+        num_downsamples: 5
+        kernel_size: 3
+        weight_norm_type: spectral
+dis:
+    type: imaginaire.discriminators.fs_vid2vid
+    image:
+        num_filters: 32
+        max_num_filters: 512
+        num_discriminators: 2
+        num_layers: 4
+        weight_norm_type: spectral
+        activation_norm_type: instance
+    temporal:
+        num_scales: 3
+flow_network:
+    type: imaginaire.third_party.flow_net.flow_net
+
+# Data options.
+data:
+    name: 'DeepcapLan_vid2vid'
+    type: imaginaire.datasets.paired_videos
+    num_frames_G: 3
+    num_frames_D: 3      
+    num_workers: 2
+
+    input_types:
+        - images:
+            ext: png
+            num_channels: 3
+            interpolator: BILINEAR
+            normalize: True
+        - seg_maps:
+            ext: png
+            num_channels: 3
+            interpolator: BILINEAR
+            normalize: True
+    
+    input_image:
+        - images
+    input_labels:
+        - seg_maps   
+    paired: True   
+
+    train:        
+        roots:
+            - /HPS/HumanBodyRetargeting2/work/Release_data_example/lan/training_images/vid2vid        
+        batch_size: 4
+        is_lmdb: False
+        initial_sequence_length: 4
+        max_sequence_length: 16        
+        augmentations:
+            resize_smallest_side: 512            
+            random_scale_limit: 0.2
+            horizontal_flip: False
+            random_crop_h_w: 512, 512    
+    val:        
+        roots:
+            - /HPS/HumanBodyRetargeting2/work/Release_data_example/lan/testing_images/vid2vid
+        batch_size: 4   
+        is_lmdb: False
+        augmentations:
+            resize_h_w: 512, 512
+            horizontal_flip: False
+
+# Inference options.
+pretrained_weight: 1b2M5rU740vBurLQ9iDP2kb4sP5HAb-Jx
+
+test_data:
+    name: 'DeepcapLan_vid2vid'
+    type: imaginaire.datasets.paired_videos
+    num_workers: 2
+    input_types:
+        - seg_maps:
+            ext: png
+            num_channels: 3
+            interpolator: BILINEAR
+            normalize: True
+        - images:
+            ext: png
+            num_channels: 3
+            interpolator: BILINEAR
+            normalize: True
+
+    input_image:
+        - images
+    input_labels:
+        - seg_maps
+    paired: True 
+
+    test:
+        is_lmdb: False
+        roots:
+            - /HPS/HumanBodyRetargeting2/work/Release_data_example/lan/testing_images/vid2vid            
+        batch_size: 1
+        augmentations:
+            resize_h_w: 512, 512
+            horizontal_flip: False

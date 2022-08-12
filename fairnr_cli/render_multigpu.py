@@ -125,8 +125,8 @@ def _main(args, output_file):
                 step += world_size
             except Exception as e:
                 print(e)
-                # raise e
-                print("I am GPU:{}, Skipping Error".format(shard_id))
+                raise e
+                # print("I am GPU:{}, Skipping Error".format(shard_id))
                 # raise e
 
             gen_timer.stop(500)
@@ -145,7 +145,7 @@ def _main(args, output_file):
     # except:
     #     timestamps = [sample]
 
-    if shard_id == 0:
+    if (shard_id == 0) and ('marchingcube' not in args.render_output_types):
         generator.save_videos(args.render_maximum_frames)
 
 def cli_main():

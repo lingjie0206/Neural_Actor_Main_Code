@@ -100,6 +100,9 @@ class BaseModel(BaseFairseqModel):
                 state_dict[fine_key.replace("field_fine", "field")] = state_dict[fine_key]
                 del state_dict[fine_key]
 
+    def export_surfaces(self, **kwargs):
+        encoder_states = self.preprocessing(**kwargs)
+        return self.encoder.export_surfaces(self.field.forward, 50, encoder_states=encoder_states)
 
     @property
     def dummy_loss(self):
