@@ -96,38 +96,7 @@ Each dataset also needs additional files which defines the canonical geometry, t
 
 We also provide the SMPL tracking results (pose and shape parameters) of each sequence. Please download from [Google drive folder](https://drive.google.com/drive/folders/1C5W4l3r2Rkewz84roqzEepQimBtPeHBY?usp=sharing)
 
-Note that D1 and D2 are orginally from the paper [Real-time Deep Dynamic Characters](https://people.mpi-inf.mpg.de/~mhaberma/projects/2021-ddc/), and S1 and S2 are orginally from the paper [DeepCap: Monocular Human Performance Capture Using Weak Supervision](https://people.mpi-inf.mpg.de/~mhaberma/projects/2020-cvpr-deepcap/). We process these four datasets in our Neural Actor format. Therefore, please consider citing the following references if you use the datasets:
 
-```bibtex
-@article{liu2021neural,
-      title={Neural Actor: Neural Free-view Synthesis of Human Actors with Pose Control}, 
-      author={Lingjie Liu and Marc Habermann and Viktor Rudnev and Kripasindhu Sarkar and Jiatao Gu and Christian Theobalt},
-      year={2021},
-      journal = {ACM Trans. Graph.(ACM SIGGRAPH Asia)}
-}
-
-@article{
-	habermann2021,
-	author = {Marc Habermann and Lingjie Liu and Weipeng Xu and Michael Zollhoefer and Gerard Pons-Moll and Christian Theobalt},
-	title = {Real-time Deep Dynamic Characters},
-	journal = {ACM Transactions on Graphics}, 
-	month = {aug},
-	volume = {40},
-	number = {4}, 
-	articleno = {94},
-	year = {2021}, 
-	publisher = {ACM}
-} 
-
-@inproceedings{deepcap,
-    title = {DeepCap: Monocular Human Performance Capture Using Weak Supervision},
-    author = {Habermann, Marc and Xu, Weipeng and Zollhoefer, Michael and Pons-Moll, Gerard and Theobalt, Christian},
-    booktitle = {{IEEE} Conference on Computer Vision and Pattern Recognition (CVPR)},
-    month = {jun},
-    organization = {{IEEE}},
-    year = {2020},
-}
-```
 
 ## Prepare your own dataset
 
@@ -311,3 +280,27 @@ Please cite as
 }
 ```
 
+If you use our dataset, please note that D1 and D2 are orginally from the paper [Real-time Deep Dynamic Characters](https://people.mpi-inf.mpg.de/~mhaberma/projects/2021-ddc/), and S1 and S2 are orginally from the paper [DeepCap: Monocular Human Performance Capture Using Weak Supervision](https://people.mpi-inf.mpg.de/~mhaberma/projects/2020-cvpr-deepcap/). We process these four datasets in our Neural Actor format. Therefore, please also consider citing the following references:
+
+```bibtex
+@article{habermann2021,
+	author = {Marc Habermann and Lingjie Liu and Weipeng Xu and Michael Zollhoefer and Gerard Pons-Moll and Christian Theobalt},
+	title = {Real-time Deep Dynamic Characters},
+	journal = {ACM Transactions on Graphics}, 
+	month = {aug},
+	volume = {40},
+	number = {4}, 
+	articleno = {94},
+	year = {2021}, 
+	publisher = {ACM}
+} 
+
+@inproceedings{deepcap,
+    title = {DeepCap: Monocular Human Performance Capture Using Weak Supervision},
+    author = {Habermann, Marc and Xu, Weipeng and Zollhoefer, Michael and Pons-Moll, Gerard and Theobalt, Christian},
+    booktitle = {{IEEE} Conference on Computer Vision and Pattern Recognition (CVPR)},
+    month = {jun},
+    organization = {{IEEE}},
+    year = {2020},
+}
+```
