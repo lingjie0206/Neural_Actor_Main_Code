@@ -103,10 +103,10 @@ ln -s ../normal seg_maps    # softlink normal images as input
 * Train on single GPU
 ```bash
 pushd imaginaire
-python train.py --config vid2vid_inference.yaml --single_gpu --traindir <dataset_path>/training_images/vid2vid --logdir <output_path>
+python train.py --config ../vid2vid.yaml --single_gpu --traindir <dataset_path>/training_images/vid2vid --logdir <output_path>
 
 # or training with multi-GPUs
-# python -m torch.distributed.launch --nproc_per_node=N train.py --config vid2vid_inference.yaml --traindir <dataset_path>/training_images/vid2vid --logdir <output_path>
+# python -m torch.distributed.launch --nproc_per_node=N train.py --config ../vid2vid.yaml --traindir <dataset_path>/training_images/vid2vid --logdir <output_path>
 popd 
 ```
 The learned model and log will be saved in ``<output_path>``.

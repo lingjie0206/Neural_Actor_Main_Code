@@ -73,7 +73,7 @@ ln -s ${data_path}/normal ${data_path}/images
 # generating texture maps using N GPUs (e.g., N=8 at our cluster)
 pushd imaginaire
 python -m torch.distributed.launch --nproc_per_node=8 inference.py \
-    --config vid2vid_inference.yaml \
+    --config ../vid2vid.yaml \
     --checkpoint ${texture_model} \
     --testdir ${data_path} \
     --output_dir ${data_path}/tex
@@ -81,7 +81,7 @@ python -m torch.distributed.launch --nproc_per_node=8 inference.py \
 # or we can use single-gpu to inference
 # python inference.py \
 #     --single_gpu \
-#     --config vid2vid_inference.yaml \
+#     --config ../vid2vid.yaml \
 #     --checkpoint ${texture_model} \
 #     --testdir ${data_path} \
 #     --output_dir ${data_path}/tex
